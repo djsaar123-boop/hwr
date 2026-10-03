@@ -26,3 +26,4 @@ Code: `src/components/assess/*` (the flow, per [docs/VISUAL_BRIEF.md](docs/VISUA
 - [docs/PLAN.md](docs/PLAN.md): scope, scoring, stack, phases, hosting
 - [docs/VISUAL_BRIEF.md](docs/VISUAL_BRIEF.md): design and interaction contract
 - [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md): database setup
+# hwr
