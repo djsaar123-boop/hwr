@@ -1,26 +1,108 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --bg: #fbf8f3;
+  --surface: #ffffff;
+  --ink: #1f2421;
+  --muted: #5f635e;
+  --line: #e7e1d7;
+  --amber: #a85f0c;
+  --focus: #2f6fdf;
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    --bg: #141714;
+    --surface: #1c201c;
+    --ink: #ecede8;
+    --muted: #a3a69f;
+    --line: #2c312c;
+    --amber: #e0a24f;
+    --focus: #7aa7ff;
+    color-scheme: dark;
   }
 }
 
+:root[data-theme="dark"] {
+  --bg: #141714;
+  --surface: #1c201c;
+  --ink: #ecede8;
+  --muted: #a3a69f;
+  --line: #2c312c;
+  --amber: #e0a24f;
+  --focus: #7aa7ff;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-amber: var(--amber);
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+}
+
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Area colour helpers — set `--area` inline on a parent (see areaStyle()) */
+@utility area-tint {
+  background-color: color-mix(in srgb, var(--area) 14%, var(--bg));
+}
+@utility area-tint-strong {
+  background-color: color-mix(in srgb, var(--area) 26%, var(--bg));
+}
+@utility area-solid {
+  background-color: color-mix(in srgb, var(--area) 76%, black);
+  color: #fff;
+}
+@utility area-ink {
+  color: color-mix(in srgb, var(--area) 62%, var(--ink));
+}
+@utility area-border {
+  border-color: color-mix(in srgb, var(--area) 38%, var(--line));
+}
+@utility area-fill {
+  background-color: var(--area);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+/* shared form controls (admin, auth): use as `btn btn-primary`, `btn btn-ghost`, `field` */
+@layer components {
+  .field {
+    @apply w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-[15px] text-ink placeholder:text-muted;
+  }
+  .btn {
+    @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full px-5 text-[15px] font-semibold transition-[transform,opacity] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-ink text-bg;
+  }
+  .btn-ghost {
+    @apply border border-line bg-surface text-ink;
+  }
 }

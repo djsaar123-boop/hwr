@@ -1,36 +1,28 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HWR — Holistic Wellbeing Report
 
-## Getting Started
+Wellness coach platform. The MVP covers the Health · Wealth · Relationships assessment → scorecard → coach on WhatsApp / sign-up → journey dashboard, plus admin for the question bank.
 
-First, run the development server:
+## Run it
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Set up Supabase: [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md). Run `schema.sql`, `seed.sql`, then `migrations/002_na_tips_claims.sql`.
+2. `cp .env.example .env.local`, then fill in the URL and publishable key.
+3. `npm install && npm run dev`, then open http://localhost:3000
+4. Make yourself admin (after signing up once): `update profiles set role = 'admin' where email = 'you@…';`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Map
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Path | What |
+|---|---|
+| `/` | Landing → Begin |
+| `/assess` | Bubble picker → area list → questions (anonymous, resumable) |
+| `/result/[id]` | Scorecard: ring, area cards, strengths, growth tips, WhatsApp + sign-up CTAs |
+| `/signup`, `/login` | Email magic link. Sign-up upgrades the guest in place; login moves guest results into the account |
+| `/dashboard` | Journey chart, history, retake, profile (name, phone) |
+| `/admin` | Overview · Areas & questions · Score bands · Submissions (CSV) · Settings (coach WhatsApp) |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Code: `src/components/assess/*` (the flow, per [docs/VISUAL_BRIEF.md](docs/VISUAL_BRIEF.md)), `src/lib/report.ts` (strengths, growth, WhatsApp link), scoring in Postgres (`complete_assessment()` in `supabase/schema.sql`).
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Docs
+- [docs/PLAN.md](docs/PLAN.md): scope, scoring, stack, phases, hosting
+- [docs/VISUAL_BRIEF.md](docs/VISUAL_BRIEF.md): design and interaction contract
+- [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md): database setup
