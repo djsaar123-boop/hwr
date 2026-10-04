@@ -1,54 +1,56 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import AuthShell from "@/components/AuthShell";
+import GoogleButton from "@/components/GoogleButton";
+import { stashGuestClaim } from "@/lib/claim";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SignupForm({ isGuest }: { isGuest: boolean }) {
-  const [form, setForm] = useState({ full_name: "", email: "", phone: "" });
-  const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
+  const router = useRouter();
+  const [form, setForm] = useState({ full_name: "", email: "", phone: "", password: "" });
+  const [status, setStatus] = useState<"idle" | "sending" | "confirm">("idle");
   const [error, setError] = useState<string | null>(null);
   const [exists, setExists] = useState(false);
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [k]: e.target.value });
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.password.length < 8) return setError("Use at least 8 characters for your password.");
     setStatus("sending");
     setError(null);
     setExists(false);
 
     const supabase = createClient();
-    const email = form.email.trim();
+    await stashGuestClaim(supabase); // carries the guest's scorecard into the new account
     const meta = { full_name: form.full_name.trim(), phone: form.phone.trim() };
-    const emailRedirectTo = `${location.origin}/auth/callback?next=/dashboard`;
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    let err;
-    if (user?.is_anonymous) {
-      // Upgrade the guest in place — their assessment is already theirs, nothing to migrate.
-      await supabase.from("profiles").update({ full_name: meta.full_name || null, phone: meta.phone || null }).eq("id", user.id);
-      ({ error: err } = await supabase.auth.updateUser({ email, data: meta }, { emailRedirectTo }));
-    } else {
-      ({ error: err } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo, data: meta } }));
-    }
+    const { data, error: err } = await supabase.auth.signUp({
+      email: form.email.trim(),
+      password: form.password,
+      options: { data: meta, emailRedirectTo: `${location.origin}/auth/callback?next=/dashboard` },
+    });
 
     if (err) {
-      const taken = err.code === "email_exists" || /already|registered/i.test(err.message);
+      const taken = err.code === "user_already_exists" || /already|registered/i.test(err.message);
       setExists(taken);
       setError(taken ? "That email already has an account." : err.message);
       setStatus("idle");
-    } else setStatus("sent");
+    } else if (data.session && data.user) {
+      await supabase.from("profiles").update({ full_name: meta.full_name || null, phone: meta.phone || null }).eq("id", data.user.id);
+      router.replace("/dashboard");
+      router.refresh();
+    } else {
+      setStatus("confirm"); // email confirmation is switched on in Supabase
+    }
   };
 
-  if (status === "sent") {
+  if (status === "confirm") {
     return (
-      <AuthShell title="One last tap" subtitle={`We sent a confirmation link to ${form.email}. Open it on this device to finish.`}>
-        <p className="text-sm text-muted">Didn&apos;t get it? Check spam, or</p>
-        <button className="btn btn-ghost mt-3 w-full" onClick={() => setStatus("idle")}>
-          Try again
+      <AuthShell title="Confirm your email" subtitle={`We sent a confirmation link to ${form.email}. Open it on this device to finish.`}>
+        <button className="btn btn-ghost w-full" onClick={() => setStatus("idle")}>
+          Back
         </button>
       </AuthShell>
     );
@@ -57,12 +59,12 @@ export default function SignupForm({ isGuest }: { isGuest: boolean }) {
   return (
     <AuthShell
       title="Save your results"
-      subtitle={
-        isGuest
-          ? "Your scorecard is kept, and every retake adds a point to your journey graph."
-          : "Create a free account to track your wellbeing over time."
-      }
+      subtitle={isGuest ? "Your scorecard is kept, and every retake adds a point to your journey graph." : "Create a free account to track your wellbeing over time."}
     >
+      <GoogleButton onError={setError} />
+      <div className="my-5 flex items-center gap-3 text-xs text-muted">
+        <span className="h-px flex-1 bg-line" /> or <span className="h-px flex-1 bg-line" />
+      </div>
       <form onSubmit={submit} className="grid gap-3">
         <label className="grid gap-1.5 text-sm font-medium">
           Your name
@@ -71,6 +73,11 @@ export default function SignupForm({ isGuest }: { isGuest: boolean }) {
         <label className="grid gap-1.5 text-sm font-medium">
           Email
           <input className="field" type="email" required autoComplete="email" value={form.email} onChange={set("email")} placeholder="you@example.com" />
+        </label>
+        <label className="grid gap-1.5 text-sm font-medium">
+          Password
+          <input className="field" type="password" required minLength={8} autoComplete="new-password" value={form.password} onChange={set("password")} />
+          <span className="text-xs font-normal text-muted">At least 8 characters.</span>
         </label>
         <label className="grid gap-1.5 text-sm font-medium">
           <span>
@@ -89,12 +96,16 @@ export default function SignupForm({ isGuest }: { isGuest: boolean }) {
           </p>
         )}
         <button className="btn btn-primary mt-2" disabled={status === "sending"}>
-          {status === "sending" ? "Sending…" : "Create my account"}
+          {status === "sending" ? "Creating…" : "Create my account"}
         </button>
-        <p className="text-xs leading-relaxed text-muted">
-          We&apos;ll email you a link to confirm — no password needed. Your answers are private to you and your coach.
-        </p>
+        <p className="text-xs leading-relaxed text-muted">Your answers are private to you and your coach.</p>
       </form>
+      <p className="mt-6 text-center text-sm text-muted">
+        Already have an account?{" "}
+        <Link href="/login" className="font-medium text-ink underline underline-offset-4">
+          Log in
+        </Link>
+      </p>
     </AuthShell>
   );
 }

@@ -3,6 +3,16 @@ import { NextResponse, type NextRequest } from "next/server";
 
 // Keeps the Supabase session cookie fresh on every navigation.
 export async function proxy(request: NextRequest) {
+  // If Supabase falls back to the Site URL (redirect not allow-listed), the auth code lands on /?code=…
+  // Forward it to the callback so the sign-in still completes.
+  const { pathname, searchParams } = request.nextUrl;
+  if (pathname === "/" && searchParams.has("code")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/callback";
+    url.searchParams.set("next", "/dashboard");
+    return NextResponse.redirect(url);
+  }
+
   let response = NextResponse.next({ request });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

@@ -117,6 +117,32 @@ export default function Dashboard({ profile, email, assessments }: { profile: Pr
   );
 }
 
+function PasswordForm() {
+  const [pw, setPw] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pw.length < 8) return setMsg("Use at least 8 characters.");
+    const { error } = await createClient().auth.updateUser({ password: pw });
+    setMsg(error ? error.message : "Password saved ✓ — you can now log in with email + password.");
+    if (!error) setPw("");
+  };
+
+  return (
+    <form onSubmit={save} className="mt-4 grid gap-3 rounded-2xl border border-line bg-surface p-5">
+      <label className="grid gap-1.5 text-sm font-medium">
+        Set or change password
+        <input className="field" type="password" autoComplete="new-password" minLength={8} value={pw} onChange={(e) => (setPw(e.target.value), setMsg(null))} />
+      </label>
+      <div className="flex items-center gap-3">
+        <button className="btn btn-ghost">Save password</button>
+        {msg && <span className="text-sm text-muted">{msg}</span>}
+      </div>
+    </form>
+  );
+}
+
 function ProfileForm({ profile, email, hasHistory }: { profile: Profile | null; email: string; hasHistory: boolean }) {
   const router = useRouter();
   const [name, setName] = useState(profile?.full_name ?? "");
@@ -155,6 +181,7 @@ function ProfileForm({ profile, email, hasHistory }: { profile: Profile | null; 
           {saved && <span className="text-sm text-muted">Saved ✓</span>}
         </div>
       </form>
+      <PasswordForm />
       {hasHistory && (
         <button onClick={deleteHistory} className="mt-4 text-sm text-muted underline underline-offset-4 hover:text-amber">
           Delete my assessment history
